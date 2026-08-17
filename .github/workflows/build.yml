@@ -40,9 +40,10 @@ jobs:
           mkdir pkg
           cp llama.cpp/build/bin/llama-server llama.cpp/build/bin/llama-cli pkg/
           cp llama.cpp/build/bin/lib*.so* pkg/ 2>/dev/null || true
-          cp /usr/local/cuda/lib64/libcudart.so* pkg/ 2>/dev/null || true
-          cp /usr/local/cuda/lib64/libcublas.so* pkg/ 2>/dev/null || true
-          cp /usr/local/cuda/lib64/libcublasLt.so* pkg/ 2>/dev/null || true
+          for L in libcudart.so* libcublas.so* libcublasLt.so*; do
+            find /usr/local/cuda* /usr/lib/x86_64-linux-gnu -name "$L" -exec cp {} pkg/ \; 2>/dev/null || true
+          done
+          ls -la pkg/ | grep -E "libcu|libcudart|llama-server" || echo "WARNING: no cuda runtime libs copied"
           cd pkg && zip -r ../llama-cpp-sm75-cuda.zip . && cd ..
           ls -la llama-cpp-sm75-cuda.zip
 
