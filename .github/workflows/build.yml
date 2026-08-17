@@ -23,7 +23,7 @@ jobs:
 
       - name: Configure (sm_75, no native CPU flags - Kaggle CPUs are older)
         run: |
-          cmake -B llama.cpp/build \
+          cmake -S llama.cpp -B llama.cpp/build \
             -DGGML_CUDA=ON \
             -DCMAKE_CUDA_ARCHITECTURES=75 \
             -DGGML_NATIVE=OFF \
