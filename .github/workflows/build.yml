@@ -1,0 +1,50 @@
+name: build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install CUDA toolkit (no GPU needed - nvcc targets sm_75 offline)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nvidia-cuda-toolkit zip
+          nvcc --version | tail -2
+
+      - name: Clone llama.cpp (HEAD)
+        run: |
+          git clone --depth=1 https://github.com/ggml-org/llama.cpp
+
+      - name: Configure (sm_75, no native CPU flags - Kaggle CPUs are older)
+        run: |
+          cmake -B llama.cpp/build \
+            -DGGML_CUDA=ON \
+            -DCMAKE_CUDA_ARCHITECTURES=75 \
+            -DGGML_NATIVE=OFF \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build llama-server + llama-cli
+        run: cmake --build llama.cpp/build -j 2 --target llama-server llama-cli
+
+      - name: Package (binaries + runtime libs)
+        run: |
+          mkdir pkg
+          cp llama.cpp/build/bin/llama-server llama.cpp/build/bin/llama-cli pkg/
+          cp llama.cpp/build/bin/lib*.so* pkg/ 2>/dev/null || true
+          cp /usr/local/cuda/lib64/libcudart.so* pkg/ 2>/dev/null || true
+          cp /usr/local/cuda/lib64/libcublas.so* pkg/ 2>/dev/null || true
+          cp /usr/local/cuda/lib64/libcublasLt.so* pkg/ 2>/dev/null || true
+          cd pkg && zip -r ../llama-cpp-sm75-cuda.zip . && cd ..
+          ls -la llama-cpp-sm75-cuda.zip
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          files: llama-cpp-sm75-cuda.zip
