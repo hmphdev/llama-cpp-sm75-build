@@ -24,9 +24,12 @@ jobs:
           sudo apt-get install -y cuda-toolkit-12-9
           /usr/local/cuda-12.9/bin/nvcc --version | tail -2
 
-      - name: Clone llama.cpp (HEAD)
+      - name: Clone llama.cpp (pinned cb295bf59663 - last CUDA split buffer for row split)
         run: |
           git clone --depth=1 https://github.com/ggml-org/llama.cpp
+          cd llama.cpp
+          git fetch --depth=1 origin cb295bf59663cd3577389315636772f4060bd1f5
+          git checkout cb295bf59663cd3577389315636772f4060bd1f5
 
       - name: Configure (sm_75, no native CPU flags - Kaggle CPUs are older)
         run: |
