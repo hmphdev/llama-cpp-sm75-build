@@ -39,6 +39,8 @@ jobs:
             -DGGML_CUDA=ON \
             -DCMAKE_CUDA_ARCHITECTURES=75 \
             -DGGML_NATIVE=OFF \
+            -DGGML_CUDA_FORCE_MMQ=ON \
+            -DGGML_CUDA_FA_ALL_QUANTS=ON \
             -DCMAKE_BUILD_TYPE=Release
 
       - name: Build llama-server + llama-cli
