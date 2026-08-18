@@ -14,11 +14,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install CUDA toolkit (no GPU needed - nvcc targets sm_75 offline)
+      - name: Install CUDA toolkit 12.9 (nvcc 12.9 supports GCC 11; apt 12.0 breaks on GCC 11 std::function)
         run: |
           sudo apt-get update
-          sudo apt-get install -y nvidia-cuda-toolkit zip
-          nvcc --version | tail -2
+          sudo apt-get install -y wget zip
+          wget -q https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+          sudo dpkg -i cuda-keyring_1.1-1_all.deb
+          sudo apt-get update
+          sudo apt-get install -y cuda-toolkit-12-9
+          /usr/local/cuda-12.9/bin/nvcc --version | tail -2
 
       - name: Clone llama.cpp (HEAD)
         run: |
@@ -26,6 +30,8 @@ jobs:
 
       - name: Configure (sm_75, no native CPU flags - Kaggle CPUs are older)
         run: |
+          export PATH=/usr/local/cuda-12.9/bin:$PATH
+          export LD_LIBRARY_PATH=/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH
           cmake -S llama.cpp -B llama.cpp/build \
             -DGGML_CUDA=ON \
             -DCMAKE_CUDA_ARCHITECTURES=75 \
@@ -33,7 +39,10 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release
 
       - name: Build llama-server + llama-cli
-        run: cmake --build llama.cpp/build -j 2 --target llama-server llama-cli
+        run: |
+          export PATH=/usr/local/cuda-12.9/bin:$PATH
+          export LD_LIBRARY_PATH=/usr/local/cuda-12.9/lib64:$LD_LIBRARY_PATH
+          cmake --build llama.cpp/build -j 2 --target llama-server llama-cli
 
       - name: Package (binaries + runtime libs)
         run: |
